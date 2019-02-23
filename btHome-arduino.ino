@@ -1,85 +1,75 @@
 /*
    Made by Taha Shaheen
    Start Date: 22nd Aug 2017
+   Restart Date: 21st Oct 2017
    End Date: 28th Aug 2017
 
    This version supports updating based on latest input
    be it from BT or Switch Board
+   It is being designed to function with a rudimentary bluetooth app.
+
+   There is no memory. Initial startup positions are based on Switch Board Positions.
 
 */
-#include "EEPROM.h"
 
-#define RELAY_1 7
-#define RELAY_2 6
-#define RELAY_3 5
-#define RELAY_4 4
+#define RELAY_socket 7   //Socket
+#define RELAY_switchBoard2 6   //SwitchBoard2
+#define RELAY_fan 5   //Fan
+#define RELAY_energySaver 4   //Energy Saver
 
-#define Switch_01 A0
-#define Switch_02 A1
-#define Switch_03 A2
-#define Switch_04 A3
+#define Swicth_energySaver A0    //Energy Saver
+#define Switch_fan A1    //Fan
+#define Switch_switchBoard2 A2    //SwitchBoard2
+#define Switch_socket A3    //Socket
 
 String inputString = "";
 boolean stringComplete = false;
-boolean Sw1State, Sw2State, Sw3State, Sw4State, Sw1StatePrevious, Sw2StatePrevious, Sw3StatePrevious, Sw4StatePrevious;
-boolean Bluetooth1State, Bluetooth2State, Bluetooth3State, Bluetooth4State;
-boolean Sw1StateMem, Sw2StateMem, Sw3StateMem, Sw4StateMem;
+boolean Sw_energySaver_State, Sw_fan_State, Sw_switchBoard2_State, Sw_socket_State, Sw_energySaver_StatePrevious, Sw_fan_StatePrevious, Sw_switchBoard2_StatePrevious, Sw_socket_StatePrevious;
+boolean Bluetooth_socket_State, Bluetooth_switchBoard2_State, Bluetooth_fan_State, Bluetooth_energySaver_State;
 boolean change;
-int eepromAddress = 0;
-byte States;
 
 void setup() {
   Serial.begin(9600);
   Serial.println("Ready...");
 
-  inputString.reserve(200);
+  inputString.reserve(200);   //Reserved for Serial Event input characters
 
-  pinMode(RELAY_1, OUTPUT);
-  pinMode(RELAY_2, OUTPUT);
-  pinMode(RELAY_3, OUTPUT);
-  pinMode(RELAY_4, OUTPUT);
+  //All relay pins made output
+  pinMode(RELAY_socket, OUTPUT);
+  pinMode(RELAY_switchBoard2, OUTPUT);
+  pinMode(RELAY_fan, OUTPUT);
+  pinMode(RELAY_energySaver, OUTPUT);
 
-  pinMode(Switch_01, INPUT_PULLUP);
-  pinMode(Switch_02, INPUT_PULLUP);
-  pinMode(Switch_03, INPUT_PULLUP);
-  pinMode(Switch_04, INPUT_PULLUP);
+  //All switches pulled up to 5V internally. Turning a switch on, sends a GND signal to pin
+  pinMode(Swicth_energySaver, INPUT_PULLUP);
+  pinMode(Switch_fan, INPUT_PULLUP);
+  pinMode(Switch_switchBoard2, INPUT_PULLUP);
+  pinMode(Switch_socket, INPUT_PULLUP);
 
-  EEPROM.write(eepromAddress, 0x0F); //delete after first run
-  readSwitchStatesFromMemory();
-  Serial.print("Reading from memory:");
-  Serial.println(States, BIN);
-  updateStatesFromMemory();
+  //Initially all switches assumed OFF without reading states. If mistake is made, it will automatically get rectified.
+  //The actual states could also have been read, but eventually initail states will come from memory and this is temporary
+  //depending on the switch state initially makes no sense.
+  Sw_energySaver_State = false;
+  Sw_fan_State = false;
+  Sw_switchBoard2_State = false;
+  Sw_socket_State = false;
 
-  Sw1State = !(digitalRead(Switch_01));
-  Sw2State = !(digitalRead(Switch_02));
-  Sw3State = !(digitalRead(Switch_03));
-  Sw4State = !(digitalRead(Switch_04));
+  //Bluetooth States also assumed false initailly. There are no bluetooth commands initially and something has to be assumed.
+  //Better a device be off than turned on for no reason.
+  Bluetooth_socket_State = false;
+  Bluetooth_switchBoard2_State = false;
+  Bluetooth_fan_State = false;
+  Bluetooth_energySaver_State = false;
 
-  Bluetooth1State = false;
-  Bluetooth2State = false;
-  Bluetooth3State = false;
-  Bluetooth4State = false;
+  //Initailly all Relays turned off. Relays are ACTIVE LOW. (The opto-coupler is ACTIVE LOW)
+  digitalWrite(RELAY_socket, HIGH);
+  digitalWrite(RELAY_switchBoard2, HIGH);
+  digitalWrite(RELAY_fan, HIGH);
+  digitalWrite(RELAY_energySaver, HIGH);
 }
 
 void loop() {
-  readSwitchStates();
-  if (change == true) {
-    updateStates();
-    saveSwitchStatesToMemory();
-  }
-  bluetoothCheck();
-}
-
-void serialEvent() {
-  while (Serial.available()) {
-    // get the new byte:
-    char inChar = (char)Serial.read();
-    // add it to the inputString:
-    inputString += inChar;
-    // if the incoming character is a newline, set a flag
-    // so the main loop can do something about it:
-    if (inChar == 't' || inChar == '\n') {
-      stringComplete = true;
-    }
-  }
+  //the loop function exclusively only works for the Switch Board
+  //Extra code is written that "interrupts" the regular flow, if a Bluetooth Command comes in
+  readSwitcheStates(); //Switches now read, extra code executed if change detected
 }
