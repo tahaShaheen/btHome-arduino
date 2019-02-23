@@ -7,6 +7,7 @@
    be it from BT or Switch Board
 
 */
+#include "EEPROM.h"
 
 #define RELAY_1 7
 #define RELAY_2 6
@@ -22,7 +23,10 @@ String inputString = "";
 boolean stringComplete = false;
 boolean Sw1State, Sw2State, Sw3State, Sw4State, Sw1StatePrevious, Sw2StatePrevious, Sw3StatePrevious, Sw4StatePrevious;
 boolean Bluetooth1State, Bluetooth2State, Bluetooth3State, Bluetooth4State;
+boolean Sw1StateMem, Sw2StateMem, Sw3StateMem, Sw4StateMem;
 boolean change;
+int eepromAddress = 0;
+byte States;
 
 void setup() {
   Serial.begin(9600);
@@ -40,108 +44,30 @@ void setup() {
   pinMode(Switch_03, INPUT_PULLUP);
   pinMode(Switch_04, INPUT_PULLUP);
 
-  Sw1State = false;
-  Sw2State = false;
-  Sw3State = false;
-  Sw4State = false;
+  EEPROM.write(eepromAddress, 0x0F); //delete after first run
+  readSwitchStatesFromMemory();
+  Serial.print("Reading from memory:");
+  Serial.println(States, BIN);
+  updateStatesFromMemory();
+
+  Sw1State = !(digitalRead(Switch_01));
+  Sw2State = !(digitalRead(Switch_02));
+  Sw3State = !(digitalRead(Switch_03));
+  Sw4State = !(digitalRead(Switch_04));
 
   Bluetooth1State = false;
   Bluetooth2State = false;
   Bluetooth3State = false;
   Bluetooth4State = false;
-
-  digitalWrite(RELAY_1, HIGH);
-  digitalWrite(RELAY_2, HIGH);
-  digitalWrite(RELAY_3, HIGH);
-  digitalWrite(RELAY_4, HIGH);
 }
 
 void loop() {
-  readSwitcheStates();
-  if (change == true)
+  readSwitchStates();
+  if (change == true) {
     updateStates();
-  bluetoothCheck();
-}
-
-void bluetoothCheck() {
-  if (stringComplete) {
-    Serial.println(inputString);
-    switch (inputString.toInt()) {
-      case 1:
-        Bluetooth4State = !Bluetooth4State;
-        break;
-      case 2:
-        Bluetooth3State  = !Bluetooth3State;
-        break;
-      case 3:
-        Bluetooth2State  = !Bluetooth2State;
-        break;
-      case 4:
-        Bluetooth1State  = !Bluetooth1State;
-        break;
-      default:
-        returnStates();
-    }
-    updateStates();
-    inputString = "";
-    stringComplete = false;
+    saveSwitchStatesToMemory();
   }
-}
-void readSwitcheStates() {
-  Sw1StatePrevious = Sw1State;
-  Sw2StatePrevious = Sw2State;
-  Sw3StatePrevious = Sw3State;
-  Sw4StatePrevious = Sw4State;
-  Sw1State = !(digitalRead(Switch_01));
-  Sw2State = !(digitalRead(Switch_02));
-  Sw3State = !(digitalRead(Switch_03));
-  Sw4State = !(digitalRead(Switch_04));
-  if ((Sw1State != Sw1StatePrevious) || (Sw3State != Sw3StatePrevious) || (Sw3State != Sw3StatePrevious) || (Sw4State != Sw4StatePrevious))
-    change = true;
-}
-
-void updateStates() {
-  if (Sw1State ^ Bluetooth4State)
-    digitalWrite(RELAY_4, LOW);
-  else
-    digitalWrite(RELAY_4, HIGH);
-  if (Sw2State ^ Bluetooth3State )
-    digitalWrite(RELAY_3, LOW);
-  else
-    digitalWrite(RELAY_3, HIGH);
-  if (Sw3State ^ Bluetooth2State )
-    digitalWrite(RELAY_2, LOW);
-  else
-    digitalWrite(RELAY_2, HIGH);
-  if (Sw4State ^ Bluetooth1State )
-    digitalWrite(RELAY_1, LOW);
-  else
-    digitalWrite(RELAY_1, HIGH);
-}
-
-void returnStates() {
-  byte States = 0b0000000;
-  if (Sw1State ^ Bluetooth4State)
-    States |= 0b10000000;
-  else
-    States &= 0b01111111;
-
-  if (Sw2State ^ Bluetooth3State )
-    States |= 0b01000000;
-  else
-    States &= 0b10111111;
-
-  if (Sw3State ^ Bluetooth2State )
-    States |= 0b00100000;
-  else
-    States &= 0b11011111;
-
-  if (Sw4State ^ Bluetooth1State )
-    States |= 0b00010000;
-  else
-    States &= 0b11101111;
-
-    Serial.println(States);
+  bluetoothCheck();
 }
 
 void serialEvent() {
