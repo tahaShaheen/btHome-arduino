@@ -35,11 +35,6 @@ void setup() {
   pinMode(RELAY_3, OUTPUT);
   pinMode(RELAY_4, OUTPUT);
 
-  digitalWrite(RELAY_1, LOW);
-  digitalWrite(RELAY_2, HIGH);
-  digitalWrite(RELAY_3, HIGH);
-  digitalWrite(RELAY_4, HIGH);
-
   pinMode(Switch_01, INPUT_PULLUP);
   pinMode(Switch_02, INPUT_PULLUP);
   pinMode(Switch_03, INPUT_PULLUP);
@@ -54,14 +49,17 @@ void setup() {
   Bluetooth2State = false;
   Bluetooth3State = false;
   Bluetooth4State = false;
+
+  digitalWrite(RELAY_1, HIGH);
+  digitalWrite(RELAY_2, HIGH);
+  digitalWrite(RELAY_3, HIGH);
+  digitalWrite(RELAY_4, HIGH);
 }
 
 void loop() {
   readSwitcheStates();
-  if (change == true) {
-    delay(100);
+  if (change == true)
     updateStates();
-  }
   bluetoothCheck();
 }
 
@@ -100,7 +98,6 @@ void readSwitcheStates() {
   Sw4State = !(digitalRead(Switch_04));
   if ((Sw1State != Sw1StatePrevious) || (Sw3State != Sw3StatePrevious) || (Sw3State != Sw3StatePrevious) || (Sw4State != Sw4StatePrevious))
     change = true;
-
 }
 
 void updateStates() {
@@ -123,29 +120,28 @@ void updateStates() {
 }
 
 void returnStates() {
-  Serial.print("BULB: ");
+  byte States = 0b0000000;
   if (Sw1State ^ Bluetooth4State)
-    Serial.println("ON");
+    States |= 0b10000000;
   else
-    Serial.println("OFF");
+    States &= 0b01111111;
 
-  Serial.print("FAN: ");
   if (Sw2State ^ Bluetooth3State )
-    Serial.println("ON");
+    States |= 0b01000000;
   else
-    Serial.println("OFF");
+    States &= 0b10111111;
 
-  Serial.print("SWITCH BOARD: ");
   if (Sw3State ^ Bluetooth2State )
-    Serial.println("ON");
+    States |= 0b00100000;
   else
-    Serial.println("OFF");
+    States &= 0b11011111;
 
-  Serial.print("PLUG: ");
   if (Sw4State ^ Bluetooth1State )
-    Serial.println("ON");
+    States |= 0b00010000;
   else
-    Serial.println("OFF");
+    States &= 0b11101111;
+
+    Serial.println(States);
 }
 
 void serialEvent() {
