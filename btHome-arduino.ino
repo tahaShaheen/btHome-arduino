@@ -4,9 +4,10 @@
    End Date:
 
    This version is where all code is rewritten to stamp out errors
-   This is V4.2.
+   This is V4.3.
    It only supports Switch Inpts.
    It also supports returning appliance state data to the user
+   The appliances can be switched via bluetooth commands as well
 
    There is no memory. Initial startup positions always OFF are not based on Switch Board positions.
    Switching happens at switch state updates
@@ -22,17 +23,20 @@
 #define Switch_switchBoard2 A2    //SwitchBoard2
 #define Switch_socket A3    //Socket
 
-boolean Sw_energySaver_State, Sw_fan_State, Sw_switchBoard2_State, Sw_socket_State, Sw_energySaver_StatePrevious, Sw_fan_StatePrevious, Sw_switchBoard2_StatePrevious, Sw_socket_StatePrevious;
+boolean Sw_energySaver_State, Sw_fan_State, Sw_switchBoard2_State, Sw_socket_State,
+        Sw_energySaver_StatePrevious, Sw_fan_StatePrevious, Sw_switchBoard2_StatePrevious, Sw_socket_StatePrevious;
 boolean change = false;
+
+boolean Bluetooth_socket_State, Bluetooth_switchBoard2_State, Bluetooth_fan_State, Bluetooth_energySaver_State,
+        Bluetooth_socket_StatePrevious, Bluetooth_switchBoard2_StatePrevious, Bluetooth_fan_StatePrevious, Bluetooth_energySaver_StatePrevious;
 
 String inputString = "";
 boolean stringComplete = false;
 
-byte States = 0b0000000;
 
 void setup() {
   Serial.begin(9600);
-  Serial.println("Ready...");
+//  Serial.println("Ready...");
 
   inputString.reserve(200);   //Reserved for Serial Event input characters
 
@@ -42,10 +46,11 @@ void setup() {
   pinMode(RELAY_fan, OUTPUT);
   pinMode(RELAY_energySaver, OUTPUT);
 
-
   //Initailly all Relays turned off. Relays are ACTIVE LOW. (The opto-coupler is ACTIVE LOW)
   digitalWrite(RELAY_socket, HIGH);
-  digitalWrite(RELAY_switchBoard2, HIGH);
+  digitalWrite(RELAY_switchBoard2, LOW); /*This one is turned ON by default because 
+                                           (a)It is a switch board that should always be ON, 
+                                           (b)It serves as a diagnostic tool by turning ON as soon as the setup is reset */
   digitalWrite(RELAY_fan, HIGH);
   digitalWrite(RELAY_energySaver, HIGH);
 
@@ -75,8 +80,15 @@ void setup() {
   Sw_fan_State = !(digitalRead(Switch_fan));
   Sw_switchBoard2_State = !(digitalRead(Switch_switchBoard2));
   Sw_socket_State = !(digitalRead(Switch_socket));
-}
 
+  //Bluetooth States also assumed false initailly. There are no bluetooth commands initially and something has to be assumed.
+  //Better a device be off than turned on for no reason.
+  Bluetooth_energySaver_State = false;
+  Bluetooth_fan_State = false;
+  Bluetooth_switchBoard2_State = false;
+  Bluetooth_socket_State = false;
+}
+ 
 void loop() {
   //the loop function exclusively only works for the Switch Board
   //Extra code is written that "interrupts" the regular flow, if a Bluetooth Command comes in
