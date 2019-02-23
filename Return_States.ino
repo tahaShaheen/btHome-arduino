@@ -2,8 +2,6 @@ void returnStates() {
   //The first nibble of the byte "States" reflects the current state of the devices
   //The byte "States" does not updated regualrly because it does not need to be
 
-  byte States = 0b0000000;
-
   if (!digitalRead(RELAY_energySaver))
     States |= 0b10000000;
   else
@@ -29,5 +27,3 @@ void returnStates() {
   //1 is ON
   //0 is OFF
 }
-
-

@@ -1,5 +1,6 @@
 void updateStates() {
-  //V4.1 only supports Switch States
+  //V4.2 only supports Switch States 
+  //and returning states of appliances at Bluetooth command
   //The appliances turn on or off based state changes of Switches
 
   if (Sw_energySaver_State != Sw_energySaver_StatePrevious)
@@ -21,4 +22,6 @@ void updateStates() {
     digitalWrite(RELAY_socket, !digitalRead(RELAY_socket));
   else
     digitalWrite(RELAY_socket, digitalRead(RELAY_socket));
+
+  returnStates(); //remove this
 }

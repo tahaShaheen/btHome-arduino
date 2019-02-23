@@ -4,8 +4,9 @@
    End Date:
 
    This version is where all code is rewritten to stamp out errors
-   This is V4.1.
+   This is V4.2.
    It only supports Switch Inpts.
+   It also supports returning appliance state data to the user
 
    There is no memory. Initial startup positions always OFF are not based on Switch Board positions.
    Switching happens at switch state updates
@@ -24,13 +25,23 @@
 boolean Sw_energySaver_State, Sw_fan_State, Sw_switchBoard2_State, Sw_socket_State, Sw_energySaver_StatePrevious, Sw_fan_StatePrevious, Sw_switchBoard2_StatePrevious, Sw_socket_StatePrevious;
 boolean change = false;
 
+String inputString = "";
+boolean stringComplete = false;
+
+byte States = 0b0000000;
+
 void setup() {
+  Serial.begin(9600);
+  Serial.println("Ready...");
+
+  inputString.reserve(200);   //Reserved for Serial Event input characters
 
   //All relay pins made output
   pinMode(RELAY_socket, OUTPUT);
   pinMode(RELAY_switchBoard2, OUTPUT);
   pinMode(RELAY_fan, OUTPUT);
   pinMode(RELAY_energySaver, OUTPUT);
+
 
   //Initailly all Relays turned off. Relays are ACTIVE LOW. (The opto-coupler is ACTIVE LOW)
   digitalWrite(RELAY_socket, HIGH);
@@ -64,7 +75,6 @@ void setup() {
   Sw_fan_State = !(digitalRead(Switch_fan));
   Sw_switchBoard2_State = !(digitalRead(Switch_switchBoard2));
   Sw_socket_State = !(digitalRead(Switch_socket));
-
 }
 
 void loop() {
